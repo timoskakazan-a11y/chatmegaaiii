@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+// --- CONFIG ---
+const BOT_TOKEN = "8328506256:AAHdrm3QvgrB_HZ4K2z6l7C9O5R6r5-oX_Q";
+
 // --- TYPES ---
 interface UserProfile {
   id: string;
@@ -25,6 +28,7 @@ const Icons = {
   Broadcast: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>,
   Brain: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>,
   LogOut: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
+  Link: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>,
 };
 
 const App: React.FC = () => {
@@ -43,10 +47,35 @@ const App: React.FC = () => {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [isSendingCast, setIsSendingCast] = useState(false);
 
+  // Setup State
+  const [isSettingHook, setIsSettingHook] = useState(false);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '2055') setIsAuthenticated(true);
     else alert('Access Denied');
+  };
+
+  const handleSetWebhook = async () => {
+    setIsSettingHook(true);
+    try {
+      // Construct the webhook URL based on the current browser location
+      // Netlify functions are always at /.netlify/functions/function_name
+      const webhookUrl = `${window.location.origin}/.netlify/functions/webhook`;
+      const apiUrl = `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`;
+      
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      
+      if (data.ok) {
+        alert(`✅ Webhook set successfully!\nURL: ${webhookUrl}\n\nGo to Telegram and click /start.`);
+      } else {
+        alert(`❌ Error from Telegram: ${data.description}`);
+      }
+    } catch (e: any) {
+      alert(`Network Error: ${e.message}`);
+    }
+    setIsSettingHook(false);
   };
 
   const sendBroadcast = async () => {
@@ -112,7 +141,16 @@ const App: React.FC = () => {
             <NavBtn active={activeTab === 'broadcast'} onClick={() => setActiveTab('broadcast')} icon={<Icons.Broadcast />} label="Broadcast" />
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-2">
+            <button 
+                onClick={handleSetWebhook}
+                disabled={isSettingHook}
+                className="flex items-center gap-3 bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600/20 px-4 py-3 rounded-xl transition-colors text-sm font-medium w-full border border-emerald-600/20"
+            >
+               <Icons.Link /> 
+               {isSettingHook ? 'Connecting...' : 'Connect Bot'}
+            </button>
+
             <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-3 text-slate-500 hover:text-red-400 px-4 py-2 transition-colors text-sm font-medium w-full">
                 <Icons.LogOut /> Logout
             </button>
